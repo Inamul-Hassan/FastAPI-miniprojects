@@ -1,6 +1,7 @@
 from typing import Optional
-from fastapi import Body, FastAPI, Path, Query
+from fastapi import Body, FastAPI, Path, Query, HTTPException
 from pydantic import BaseModel, Field
+from starlette import status
 app = FastAPI()
 
 
@@ -57,29 +58,29 @@ async def read_all_books():
     return BOOKS
 
 
-@app.get('/books/{book_id}')
+@app.get('/books/{book_id}', status_code=status.HTTP_200_OK)
 async def read_book_by_id(book_id: int = Path(gt=0)):
     for book in BOOKS:
         if book.id == book_id:
             return book
-    return "Unable to find the book"
+    raise HTTPException(status_code=404, detail="Book not found")
 
 
-@app.get('/books/')
+@app.get('/books/', status_code=status.HTTP_200_OK)
 async def read_book_by_rating(rating: int = Query(gt=0, lt=6)):
     books = [book for book in BOOKS
              if book.rating == rating]
     return books
 
 
-@app.get('/books/publish/')
+@app.get('/books/publish/', status_code=status.HTTP_200_OK)
 async def read_book_by_publish_date(published_date: int = Query(gt=0, lt=2025)):
     books = [book for book in BOOKS
              if book.published_date == published_date]
     return books
 
 
-@app.post("/books/create_book")
+@app.post("/books/create_book", status_code=status.HTTP_201_CREATED)
 async def create_book(new_book: BookRequest):
     book = Book(**new_book.model_dump())
     book = id_generator(book)
@@ -88,21 +89,29 @@ async def create_book(new_book: BookRequest):
     BOOKS.append(book)
 
 
-@app.put("/book/update_book")
+@app.put("/book/update_book", status_code=status.HTTP_204_NO_CONTENT)
 async def update_book(update_book: BookRequest):
+    book_changed: bool = False
     for i in range(len(BOOKS)):
         if BOOKS[i].id == update_book.id:
             BOOKS[i] = update_book
+            book_changed = True
     print(BOOKS)
+    if not book_changed:
+        raise HTTPException(status_code=404, detail="Book not found")
 
 
-@app.delete('/books/delete_book/{book_id}')
+@app.delete('/books/delete_book/{book_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_book(book_id: int = Path(gt=0)):
+    book_changed: bool = False
     for i in range(len(BOOKS)):
         if BOOKS[i].id == book_id:
             BOOKS.pop(i)
+            book_changed = True
             break
     print(BOOKS)
+    if not book_changed:
+        raise HTTPException(status_code=404, detail="Book not found")
 
 
 def id_generator(book: Book):
