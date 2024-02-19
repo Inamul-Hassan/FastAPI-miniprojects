@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 # import models
-from models import Todo
+from models import Todos
 from database import SessionLocal
 from .auth import get_current_user
 
@@ -35,13 +35,13 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 
 @router.get("/", status_code=status.HTTP_200_OK)
 async def get_all_todos(user: user_dependency, db: db_dependency):
-    return db.query(Todo).filter(Todo.owner_id == user.get("user_id")).all()
+    return db.query(Todos).filter(Todos.owner_id == user.get("user_id")).all()
 
 
 @router.get("/todo/{todo_id}", status_code=status.HTTP_200_OK)
 async def get_todo_by_id(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
-    todo_data = db.query(Todo).filter(Todo.id == todo_id).filter(
-        Todo.owner_id == user.get('user_id')).first()
+    todo_data = db.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('user_id')).first()
     if todo_data is not None:
         return todo_data
     else:
@@ -53,7 +53,8 @@ async def post_todo(user: user_dependency, db: db_dependency, todo_request: Todo
     if user is None:
         return HTTPException(status_code=401, detail="Unauthorized")
 
-    todo_data = Todo(**todo_request.model_dump(), owner_id=user.get("user_id"))
+    todo_data = Todos(**todo_request.model_dump(),
+                      owner_id=user.get("user_id"))
 
     db.add(todo_data)
     db.commit()
@@ -63,8 +64,8 @@ async def post_todo(user: user_dependency, db: db_dependency, todo_request: Todo
 async def update_todo(user: user_dependency, db: db_dependency, todo_request: TodoRequest, todo_id: int = Path(gt=0)):
     # request_data = Todo(**todo_request.model_dump())
 
-    todo_data = db.query(Todo).filter(Todo.id == todo_id).filter(
-        Todo.owner_id == user.get('user_id')).first()
+    todo_data = db.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('user_id')).first()
     if todo_data is None:
         return HTTPException(status_code=404, detail="Todo not found")
 
@@ -79,8 +80,8 @@ async def update_todo(user: user_dependency, db: db_dependency, todo_request: To
 
 @router.delete('/todo/{todo_id}', status_code=status.HTTP_204_NO_CONTENT)
 async def delete_todo_by_id(user: user_dependency, db: db_dependency, todo_id: int = Path(gt=0)):
-    todo_data = db.query(Todo).filter(Todo.id == todo_id).filter(
-        Todo.owner_id == user.get('user_id')).first()
+    todo_data = db.query(Todos).filter(Todos.id == todo_id).filter(
+        Todos.owner_id == user.get('user_id')).first()
     if todo_data is None:
         return HTTPException(status_code=404, detail="Todo not found")
 

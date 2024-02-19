@@ -8,8 +8,9 @@ from pydantic import BaseModel, EmailStr
 from passlib.context import CryptContext
 from passlib.hash import bcrypt
 from jose import JWTError, jwt
+from starlette import status
 
-from models import User
+from models import Users
 from database import SessionLocal
 
 ALGORITHM = "HS256"
@@ -50,8 +51,8 @@ class Token(BaseModel):
     token_type: str
 
 
-def authenticate_user(db: Session, username: str, password: str) -> User | str:
-    user = db.query(User).filter(User.username == username).first()
+def authenticate_user(db: Session, username: str, password: str) -> Users | str:
+    user = db.query(Users).filter(Users.username == username).first()
     if not user:
         return "User Not Found"
     if not bcrypt.verify(password, user.hashed_password):
@@ -86,13 +87,13 @@ async def get_current_user(token: str = Depends(oauth2_scheme)):
 
 @router.get("/get_users")
 async def get_users(db: db_dependency):
-    all_users = db.query(User).all()
+    all_users = db.query(Users).all()
     return all_users
 
 
-@router.post("/create_user")
+@router.post("/create_user", status_code=status.HTTP_201_CREATED)
 async def create_user(db: db_dependency, user: UserRequest):
-    create_user = User(
+    create_user = Users(
         email=user.email,
         username=user.username,
         first_name=user.first_name,

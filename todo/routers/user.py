@@ -9,7 +9,7 @@ from passlib.context import CryptContext
 from passlib.hash import bcrypt
 
 
-from models import User
+from models import Users
 from database import SessionLocal
 from .auth import get_current_user
 
@@ -43,15 +43,15 @@ user_dependency = Annotated[dict, Depends(get_current_user)]
 
 @router.get("/me", status_code=200)
 async def get_current_user(user: user_dependency, db: db_dependency):
-    user_details = db.query(User).filter(
-        User.id == user.get('user_id')).first()
+    user_details = db.query(Users).filter(
+        Users.id == user.get('user_id')).first()
     return user_details
 
 
 @router.put("/change-password", status_code=200)
 async def change_password(user: user_dependency, db: db_dependency, changepassword: ChangePassword):
-    user_details = db.query(User).filter(
-        User.id == user.get('user_id')).first()
+    user_details = db.query(Users).filter(
+        Users.id == user.get('user_id')).first()
     if bcrypt.verify(changepassword.old_password, user_details.hashed_password):
         user_details.hashed_password = bcrypt.hash(changepassword.new_password)
         db.commit()
